@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  webapi:
+    build: .
+    container_name: aspnet_webapi
+    ports:
+      - "5166:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=GrafGenDb;Username=admin;Password=Omlegg456!
+      
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: postgres:16
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: Omlegg456!
+      POSTGRES_DB: GrafGenDb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  pgdata:
