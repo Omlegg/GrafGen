@@ -92,7 +92,7 @@ public class IdentityController : ControllerBase
             .Include(u => u.RefreshTokens)
             .FirstOrDefaultAsync(u => u.Id == userId);
 
-        foreach (var token in user.RefreshTokens)
+        foreach (var token in user?.RefreshTokens!)
             token.Revoked = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();

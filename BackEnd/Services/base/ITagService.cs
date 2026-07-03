@@ -8,7 +8,7 @@ namespace BackEnd.Services
 {
     public interface ITagService
     {
-          Task<IEnumerable<Tag>> GetAllAsync();
+        Task<IEnumerable<Tag>> GetAllAsync();
         Task<Tag?> GetByIdAsync(int id);
         Task<Tag> CreateAsync(Tag tag);
         Task<Tag?> UpdateAsync(int id, Tag updatedTag);
