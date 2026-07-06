@@ -1,46 +1,81 @@
-"use client"; // Required because we are using hooks
-import { useState, useEffect, useRef } from "react";
-import Post from "../components/Post.jsx";
+"use client";
+
+import { useState, useEffect, useRef, useCallback } from "react";
+import Post from "../components/Post";
+
+interface PostDto {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+}
 
 export default function Home() {
-  const [posts, setPosts] = useState(Array.from({ length: 10 }));
+  const [posts, setPosts] = useState<PostDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const observerTarget = useRef(null);
 
-  // This function imitates an API call
-  const loadMorePosts = () => {
+  const observerTarget = useRef<HTMLDivElement | null>(null);
+
+  const loadMorePosts = useCallback(async () => {
+    if (isLoading) return;
+
     setIsLoading(true);
-    // Simulate network delay of 1.5 seconds
-    setTimeout(() => {
-      setPosts((prev) => [...prev, ...Array.from({ length: 10 })]);
-      setIsLoading(false);
-    }, 1500);
-  };
 
-  // Intersection Observer to trigger when we hit the bottom
+    try {
+      const response = await fetch("http://localhost:5166/api/posts");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch posts");
+      }
+
+      const data = (await response.json()) as PostDto[];
+
+      setPosts((prev) => [...prev, ...data]);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoading]);
+
+  // Initial load
   useEffect(() => {
+    loadMorePosts();
+  }, []);
+
+  // Infinite scroll
+  useEffect(() => {
+    const target = observerTarget.current;
+
+    if (!target) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !isLoading) {
+        if (entries[0].isIntersecting) {
           loadMorePosts();
         }
       },
-      { threshold: 1.0 }
+      {
+        threshold: 1,
+      }
     );
 
-    if (observerTarget.current) observer.observe(observerTarget.current);
+    observer.observe(target);
+
     return () => observer.disconnect();
-  }, [isLoading]);
+  }, [loadMorePosts]);
 
   return (
-    <div className="flex flex-row w-full justify-center">
-      <div className="flex flex-col py-20 gap-6 w-full max-w-lg">
-        {posts.map((_, index) => (
-          <Post key={index} />
+    <div className="flex justify-center w-full">
+      <div className="flex flex-col w-full max-w-lg gap-6 py-20">
+        {posts.map((post) => (
+          <Post key={post.id} post={post} />
         ))}
-        
-        {/* This div acts as the "trigger" at the bottom of your list */}
-        <div ref={observerTarget} className="h-10 flex items-center justify-center">
+
+        <div
+          ref={observerTarget}
+          className="flex items-center justify-center h-10"
+        >
           {isLoading && <p>Loading more posts...</p>}
         </div>
       </div>
