@@ -19,6 +19,15 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     ConnectionMultiplexer.Connect("localhost:6379,abortConnect=false"));
 builder.Services.AddSingleton<IChatService, ChatService>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("NextJs", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
@@ -73,7 +82,16 @@ if (app.Environment.IsDevelopment())
     // REQUIRED FOR /openapi ENDPOINT
 }
 app.MapOpenApi();
+app.UseHttpsRedirection();
 
+app.UseRouting();
+
+app.UseCors("NextJs");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 app.MapControllers();
 
 app.Run();
