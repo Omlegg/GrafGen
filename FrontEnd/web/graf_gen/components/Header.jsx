@@ -37,9 +37,20 @@ export default function Header() {
     return `http://localhost:5166/api/identity/profile-picture/${fileName}`;
   };
 
-  return (
-    <div className="z-10 sticky top-0 flex flex-row items-center bg-[#c8d9e68b] w-full max-w-5xl mt-2 py-3 px-8 m-auto rounded-2xl shadow-lg shadow-[#0d0e0f54]">
-      <div className="mr-auto flex flex-row items-center space-x-8">
+       <form action="/search" className="flex flex-row items-center bg-[#ffffff] w-[90%] max-w-2xl mt-2 my-3 py-3 px-6 m-auto rounded-2xl shadow-lg shadow-[#0d0e0f54] hover:shadow-[#0d0e0f54] hover:shadow-2xl transition-shadow duration-300 ease-in-out">
+                <input name="query" type="text" placeholder="Search..."  className="w-55 mx-2" />
+                <button type="submit">
+                <Image src="/search-svgrepo-com.svg" width={30} height={30} alt="Search"/>
+                </button>
+        </form>
+    </div>
+      <div className="flex flex-row space-x-12">
+        {(user)? (
+        <Link href="/post">
+          <Image src="plus-square-svgrepo-com.svg" width={30} height={30} alt="Create Button" className="grayscale mix-blend-overlay " />
+        </Link>)
+        :null }
+        {(user)? (
         <Link href="/">
           <Image 
             src={pathname !== "/" ? "/home-svgrepo-com.svg" : "/home-svgrepo-com(1).svg"} 

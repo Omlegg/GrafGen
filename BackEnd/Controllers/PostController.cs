@@ -39,7 +39,7 @@ namespace BackEnd.Controllers
 
         // POST: api/Post
         [HttpPost]
-        public async Task<ActionResult<Post>> Create([FromBody] PostDto postDto)
+        public async Task<ActionResult<Post>> Create([FromForm] PostDto postDto)
         {
             var createdPost = await _postService.CreateAsync(
                 new Post
@@ -47,7 +47,8 @@ namespace BackEnd.Controllers
                     Title = postDto.Title,
                     ContentURL = postDto.Content,
                     UserId = postDto.UserId,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    ImageURL = postDto.Image != null ? postDto.Image.FileName : null
                 },
                 postDto.TagIds
             );

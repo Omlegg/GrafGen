@@ -11,5 +11,6 @@ namespace BackEnd.Dtos
         public string Content { get; set; } = string.Empty;
         public List<int>? TagIds { get; set; } = new();
         public string UserId { get; set; } = string.Empty;
+        public IFormFile? Image { get; set; }
     }
 }

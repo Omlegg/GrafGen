@@ -14,5 +14,6 @@ namespace BackEnd.Models
         public string UserId { get; set; }
         public User User { get; set; }
         public List<PostTag> PostTags { get; set; } = new List<PostTag>();
+        public string? ImageURL { get; set; }
     }
 }
