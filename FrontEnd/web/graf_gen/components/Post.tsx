@@ -1,10 +1,10 @@
 import Image from "next/image";
 
 interface PostDto {
-  id: number;
   title: string;
   content: string;
   createdAt: string;
+  contentURL: string;
 }
 
 interface PostProps {

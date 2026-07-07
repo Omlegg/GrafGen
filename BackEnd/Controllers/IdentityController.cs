@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace BackEnd.Controllers
 {
@@ -23,45 +24,44 @@ public class IdentityController : ControllerBase
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly ITokenService _tokenService;
-    
+    private readonly IWebHostEnvironment _webHostEnvironment;
     private readonly GrafGenDb _context;
 
     public IdentityController(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
         ITokenService tokenService,
-        GrafGenDb context)
+        GrafGenDb context,
+        IWebHostEnvironment webHostEnvironment) 
     {
         _userManager = userManager;
         _signInManager = signInManager;
-            _tokenService = tokenService;
+        _tokenService = tokenService;
         _context = context;
+        _webHostEnvironment = webHostEnvironment; 
     }
-
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
         var user = new User { UserName = dto.Username, Email = dto.Email };
         var result = await _userManager.CreateAsync(user, dto.Password);
 
-        if (!result.Succeeded)
+        if (!result.Succeeded){
             return BadRequest(result.Errors);
+        }
 
-        // Generate tokens
         var accessToken = _tokenService.CreateAccessToken(user);
-
-        // TODO: Store refresh token in DB with expiry
-        // user.RefreshToken = refreshToken; await _userManager.UpdateAsync(user);
         var refreshToken = _tokenService.CreateRefreshToken();
         await _tokenService.AddRefreshToken(user, refreshToken);
 
         return Ok(new
         {
-            AccessToken = _tokenService.CreateAccessToken(user),
+            Id = user.Id,
+            Username = user.UserName,
+            AccessToken = accessToken,
             RefreshToken = refreshToken.Token
         });
     }
-
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
@@ -115,10 +115,8 @@ public class IdentityController : ControllerBase
         if (!savedToken.IsActive)
             return Unauthorized("Token expired or revoked");
 
-        // revoke old token
         savedToken.Revoked = DateTime.UtcNow;
 
-        // create new refresh token
         var newRefreshToken = _tokenService.CreateRefreshToken();
         user.RefreshTokens.Add(newRefreshToken);
 
@@ -130,6 +128,57 @@ public class IdentityController : ControllerBase
             RefreshToken = newRefreshToken.Token
         });
     }
+    
+    [HttpPost("add-refresh-token")]
+    public async Task<IActionResult> AddRefreshToken([FromBody] RefreshTokeDto request)
+    {
+        var user = request.User;
+        var token = request.RefreshToken;
+        //someeeeeeeeeeeeeeeeeeeeee bulllshitttt idk what to write ill think of it later
+        return Ok();
+}
 
+    [HttpPost("upload-profile-picture")]
+    [Authorize] 
+    public async Task<IActionResult> UploadProfilePicture(IFormFile file)
+    {
+        if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+        var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "profiles");
+        if (!Directory.Exists(uploadsFolder))
+        {
+            Directory.CreateDirectory(uploadsFolder);
+        }
+
+        var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
+        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.CopyToAsync(stream);
+        }
+
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+        
+        user.ProfilePictureUrl = $"/images/profiles/{fileName}";
+        await _userManager.UpdateAsync(user);
+
+        return Ok(new { url = user.ProfilePictureUrl });
+    }
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        
+        if (user == null) return NotFound();
+
+        return Ok(new {
+            username = user.UserName,
+            email = user.Email,
+            profilePicture = user.ProfilePictureUrl // This is the path the frontend will use
+        });
+    }
 }
 }

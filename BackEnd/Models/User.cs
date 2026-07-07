@@ -8,6 +8,7 @@ namespace BackEnd.Models
 {
     public class User : IdentityUser
     {
+        public string? ProfilePictureUrl { get; set; }
         public List<Post> Posts { get; set; } = new List<Post>();
         public List<RefreshToken> RefreshTokens { get; set; } = new();
     }
