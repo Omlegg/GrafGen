@@ -180,5 +180,24 @@ public class IdentityController : ControllerBase
             profilePicture = user.ProfilePictureUrl // This is the path the frontend will use
         });
     }
+    [HttpGet("profile-picture/{fileName}")]
+    public IActionResult GetProfilePicture(string fileName)
+    {
+        var safeFileName = Path.GetFileName(fileName);
+        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "PrivateStorage", "Profiles", safeFileName);
+        
+        if (!System.IO.File.Exists(filePath)) 
+        {
+            return NotFound();
+        }
+        
+        var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+        if (!provider.TryGetContentType(filePath, out var contentType))
+        {
+            contentType = "application/octet-stream";
+        }
+        
+        return PhysicalFile(filePath, contentType);
+    }
 }
 }
