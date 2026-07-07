@@ -75,6 +75,7 @@ builder.Services.AddDbContext<GrafGenDb>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
+app.UseStaticFiles();
 
 app.MapHub<GrafGenHub>("/chatHub");
 

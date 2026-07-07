@@ -137,35 +137,35 @@ public class IdentityController : ControllerBase
         //someeeeeeeeeeeeeeeeeeeeee bulllshitttt idk what to write ill think of it later
         return Ok();
 }
-
-    [HttpPost("upload-profile-picture")]
-    [Authorize] 
-    public async Task<IActionResult> UploadProfilePicture(IFormFile file)
-    {
-        if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
-
-        var uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "images", "profiles");
-        if (!Directory.Exists(uploadsFolder))
+        [HttpPost("upload-profile-picture")]
+        [Authorize]
+        public async Task<IActionResult> UploadProfilePicture(IFormFile file)
         {
-            Directory.CreateDirectory(uploadsFolder);
+            if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+            var storagePath = Path.Combine(Directory.GetCurrentDirectory(), "PrivateStorage", "Profiles");
+            if (!Directory.Exists(storagePath)) Directory.CreateDirectory(storagePath);
+
+            var extension = Path.GetExtension(file.FileName);
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var filePath = Path.Combine(storagePath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // 4. Update the User in the database
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+            
+            // Store only the filename (or a relative path)
+            user.ProfilePictureUrl = fileName; 
+            await _userManager.UpdateAsync(user);
+
+            return Ok(new { url = fileName });
         }
 
-        var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(file.FileName)}";
-        var filePath = Path.Combine(uploadsFolder, fileName);
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null) return Unauthorized();
-        
-        user.ProfilePictureUrl = $"/images/profiles/{fileName}";
-        await _userManager.UpdateAsync(user);
-
-        return Ok(new { url = user.ProfilePictureUrl });
-    }
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetCurrentUser()
