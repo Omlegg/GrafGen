@@ -9,10 +9,18 @@ interface User {
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); // Track auth state
 
-  const loadUser = async () => {
+  const loadUser = async (token: string) => {
     try {
-      const response = await fetch("http://localhost:5166/api/identity/me");
+      const response = await fetch("http://localhost:5166/api/identity/me", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+      });
+      
       if (!response.ok) throw new Error("Failed to fetch");
       
       const data: User = await response.json();
@@ -25,9 +33,19 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    loadUser();
+    const savedToken = localStorage.getItem("accessToken");
+    
+    if (!savedToken) {
+      setIsLoggedIn(false);
+      setLoading(false);
+      return;
+    }
+    
+    setIsLoggedIn(true);
+    loadUser(savedToken); 
   }, []);
-
+  
+  if (isLoggedIn === false) return <p>Please Log In</p>;
   if (loading) return <div>Loading...</div>;
 
   return (
