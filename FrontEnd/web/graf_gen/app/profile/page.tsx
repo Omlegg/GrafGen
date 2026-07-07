@@ -33,7 +33,6 @@ export default function Profile() {
   if (!file) return;
 
   const formData = new FormData();
-  // Ensure this matches the parameter name 'file' in your C# controller
   formData.append("file", file); 
 
   try {
