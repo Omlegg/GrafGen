@@ -5,12 +5,13 @@ import Image from "next/image"
 interface User {
   email: string;
   username: string;
-  profilePictureURL?: string;
+  profilePicture?: string;
 }
 
 export default function Profile() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [imgSrc, setImgSrc] = useState("/default_pfp.jpg");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const loadUser = async (token: string) => {
     try {
@@ -28,39 +29,65 @@ export default function Profile() {
       setLoading(false);
     }
   };
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    setUser(null);
+    setIsLoggedIn(false);
+    window.location.href = "/";
+  };
   const handleAvatarUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-  const formData = new FormData();
-  formData.append("file", file); 
+      const localPreviewUrl = URL.createObjectURL(file);
+      setImgSrc(localPreviewUrl);
 
-  try {
-    const token = localStorage.getItem("accessToken");
-    const response = await fetch("http://localhost:5166/api/identity/upload-profile-picture", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}` },
-      body: formData,
-    });
+      const formData = new FormData();
+      formData.append("file", file); 
 
-    if (response.ok) {
-      const data = await response.json();
-      setUser((prev) => prev ? { ...prev, avatarUrl: data.url } : null);
-    } else {
-      const error = await response.text();
-      console.error("Upload error:", error);
-    }
-  } catch (err) {
-    console.error("Upload failed", err);
-  }
-};
+      try {
+        const token = localStorage.getItem("accessToken");
+        const response = await fetch("http://localhost:5166/api/identity/upload-profile-picture", {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}` },
+          body: formData,
+        });
 
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) { setIsLoggedIn(false); setLoading(false); return; }
-    setIsLoggedIn(true);
-    loadUser(token);
-  }, []);
+        if (response.ok) {
+          const data = await response.json();
+          setUser((prev) => prev ? { ...prev, avatarUrl: data.url } : null);
+        } else {
+          const error = await response.text();
+          console.error("Upload error:", error);
+        }
+      } catch (err) {
+        console.error("Upload failed", err);
+      }
+    };
+
+  
+    useEffect(() => {
+      const token = localStorage.getItem("accessToken");
+      if (!token) { setIsLoggedIn(false); setLoading(false); return; }
+      setIsLoggedIn(true);
+      loadUser(token);
+      if (user?.profilePicture) {
+        const token = localStorage.getItem("accessToken");
+        
+        fetch(`http://localhost:5166/api/identity/profile-picture/${user.profilePicture}`, {
+          headers: { 
+            Authorization: `Bearer ${token}` 
+          }
+        })
+        .then(async (res) => {
+          if (!res.ok) throw new Error("Failed to load");
+          const blob = await res.blob();
+          // Create a local object URL for the image
+          setImgSrc(URL.createObjectURL(blob));
+        })
+        .catch(() => setImgSrc("/default_pfp.jpg"));
+      }
+    }, [user?.profilePicture]);
 
   if (isLoggedIn === false) return <div className="p-8 text-center">Please Log In to view profile.</div>;
   if (loading) return <div className="p-8 text-center">Loading your profile...</div>;
@@ -88,10 +115,10 @@ export default function Profile() {
         {/* RIGHT COLUMN: Avatar and Button */}
         <div className="flex flex-col space-y-4">
           <div className="w-full aspect-square bg-gray-100 border-2 border-gray-300 rounded-lg overflow-hidden flex items-center justify-center">
-            {user?.profilePictureURL ? (
-              <img 
-                src={`http://localhost:5166${user.profilePictureURL}`} 
-                alt="Profile" 
+            {user?.profilePicture ? (
+              <img
+                src={imgSrc} 
+                alt="Profile"
                 className="w-full h-full object-cover" 
               />
             ) : (
@@ -99,10 +126,17 @@ export default function Profile() {
             )}
           </div>
 
-          <label className="cursor-pointer text-center w-full p-4 bg-[#2e386d] text-white rounded hover:bg-[#b0dcde] hover:text-black font-bold transition-all duration-300">
+          <div className="w-full flex space-x-5 text-center">
+          <label className="cursor-pointer text-center w-[50%] inline-block  p-4 bg-[#2e386d] text-white rounded hover:bg-[#b0dcde] hover:text-black font-bold transition-all duration-300">
             Change Avatar
             <input type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
           </label>
+          <label className="cursor-pointer text-center w-[50%] inline-block p-4 bg-[#81201e] text-white rounded hover:bg-[#deb2b0] hover:text-black font-bold transition-all duration-300" 
+            onClick={handleLogout}
+          >
+            Log Out
+          </label>
+          </div>
         </div>
 
       </div>

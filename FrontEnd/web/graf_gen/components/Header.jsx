@@ -35,14 +35,28 @@ export default function Header() {
   const { user, loading } = useUser();
   
   const pathname = usePathname();
-   
-  const getProfileImageUrl = async (fileName) => {
-    if (!fileName) return "/default_pfp.jpg";// Add the 'fileName=' part so the server knows what parameter to look for
-    const res = await fetch(`http://localhost:5166/api/identity/profile-picture/${fileName}`);
-    console.log(res)
-    return res;
-  };
-  return (
+  const [imgSrc, setImgSrc] = useState("/default_pfp.jpg");
+
+  useEffect(() => {
+    // Only run if we have a user and a profile picture name
+    if (user?.profilePicture) {
+      const token = localStorage.getItem("accessToken");
+      
+      fetch(`http://localhost:5166/api/identity/profile-picture/${user.profilePicture}`, {
+        headers: { 
+          Authorization: `Bearer ${token}` 
+        }
+      })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to load");
+        const blob = await res.blob();
+        // Create a local object URL for the image
+        setImgSrc(URL.createObjectURL(blob));
+      })
+      .catch(() => setImgSrc("/default_pfp.jpg"));
+    }
+  }, [user?.profilePicture]);
+  return  (
     <div className="z-10 sticky top-0 flex flex-row items-center bg-[#c8d9e68b] w-full max-w-250 mt-2 py-3 px-8 m-auto  rounded-2xl shadow-lg shadow-[#0d0e0f54]">
       <div className="mr-auto flex flex-row space-x-12 w-100 align-middle" >
 
@@ -80,12 +94,11 @@ export default function Header() {
             ) : user ? (
               <Link href="/profile">
                 <Image 
-                    src={getProfileImageUrl(user.profilePicture)} 
-                    width={30} 
-                    height={30} 
+                    src={imgSrc} 
+                    width={50} 
+                    height={50} 
                     alt="Profile" 
-                    className="rounded-full border border-gray-400"
-                    onError={(e) => { e.currentTarget.src = "/default_pfp.jpg"; }} 
+                    className="rounded-full border object-cover border-gray-400 aspect-square"
                   />
               </Link>
             ) : (

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using BackEnd.Data;
@@ -136,36 +137,45 @@ public class IdentityController : ControllerBase
         var token = request.RefreshToken;
         //someeeeeeeeeeeeeeeeeeeeee bulllshitttt idk what to write ill think of it later
         return Ok();
-}
-        [HttpPost("upload-profile-picture")]
-        [Authorize]
-        public async Task<IActionResult> UploadProfilePicture(IFormFile file)
+    }
+    [HttpPost("upload-profile-picture")]
+    [Authorize]
+    public async Task<IActionResult> UploadProfilePicture(IFormFile file)
+    {
+        if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+        const long maxFileSize = 2 * 1024 * 1024; 
+        if (file.Length > maxFileSize) return BadRequest("File size exceeds 2MB limit.");
+
+        var permittedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+
+        if (string.IsNullOrEmpty(extension) || !permittedExtensions.Contains(extension))
+            return BadRequest("Invalid file type. Only JPG, PNG, and WebP are allowed.");
+        
+        var storagePath = Path.Combine(Directory.GetCurrentDirectory(),"wwwroot","PrivateStorage", "Profiles");
+        if (!Directory.Exists(storagePath)) Directory.CreateDirectory(storagePath);
+
+        var fileName = $"{Guid.NewGuid()}{extension}";
+        var filePath = Path.Combine(storagePath, fileName);
+
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
         {
-            if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
-
-            var storagePath = Path.Combine(Directory.GetCurrentDirectory(), "PrivateStorage", "Profiles");
-            if (!Directory.Exists(storagePath)) Directory.CreateDirectory(storagePath);
-
-            var extension = Path.GetExtension(file.FileName);
-            var fileName = $"{Guid.NewGuid()}{extension}";
-            var filePath = Path.Combine(storagePath, fileName);
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            // 4. Update the User in the database
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Unauthorized();
-            
-            // Store only the filename (or a relative path)
-            user.ProfilePictureUrl = fileName; 
-            await _userManager.UpdateAsync(user);
-
-            return Ok(new { url = fileName });
+            await file.CopyToAsync(stream);
+            Console.WriteLine(filePath, stream);
         }
 
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Unauthorized();
+        
+        user.ProfilePictureUrl = fileName; 
+        await _userManager.UpdateAsync(user);
+
+        return Ok(new { url = fileName });
+    }
+
+    
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetCurrentUser()
@@ -177,18 +187,19 @@ public class IdentityController : ControllerBase
         return Ok(new {
             username = user.UserName,
             email = user.Email,
-            profilePicture = user.ProfilePictureUrl // This is the path the frontend will use
+            profilePicture = user.ProfilePictureUrl 
         });
     }
     [HttpGet("profile-picture/{fileName}")]
     public IActionResult GetProfilePicture(string fileName)
     {
         var safeFileName = Path.GetFileName(fileName);
-        var filePath = Path.Combine(Directory.GetCurrentDirectory(), "PrivateStorage", "Profiles", safeFileName);
+        var filePath = Path.Combine(Directory.GetCurrentDirectory(),"wwwroot","PrivateStorage", "Profiles", safeFileName);
         
         if (!System.IO.File.Exists(filePath)) 
         {
-            return NotFound();
+
+            return NotFound(filePath);
         }
         
         var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
