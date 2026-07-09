@@ -208,5 +208,23 @@ public class IdentityController : ControllerBase
         
         return PhysicalFile(filePath, contentType);
     }
+
+    [HttpGet("users")]
+    public IActionResult GetUsers()
+    {
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var users = _userManager.Users
+            .Where(u => u.Id != currentUserId)
+            .Select(u => new UserDto
+            {
+                Id = u.Id,
+                UserName = u.UserName!,
+                ProfilePictureUrl = u.ProfilePictureUrl
+            })
+            .ToList();
+
+        return Ok(users);
+    }
 }
 }
