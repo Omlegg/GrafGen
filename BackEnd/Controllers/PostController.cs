@@ -115,5 +115,20 @@ namespace BackEnd.Controllers
             if (!result) return NotFound();
             return NoContent();
         }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string query)
+        {
+            try
+            {
+                var posts = await _postService.GetPostsBySearch(query);
+                return Ok(posts);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception here
+                return StatusCode(500, "An error occurred while processing your search.");
+            }
+        }
     }
 }

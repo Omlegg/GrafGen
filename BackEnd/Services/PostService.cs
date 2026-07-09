@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BackEnd.Data;
+using BackEnd.Dtos;
 using BackEnd.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,9 +40,33 @@ namespace BackEnd.Services
                 .OrderBy(x => Guid.NewGuid()) 
                 .Take(10)
                 .ToListAsync();
-
         }
 
+        public async Task<IEnumerable<PostSearchDto>> GetPostsBySearch(string searchParam)
+        {
+            if (string.IsNullOrWhiteSpace(searchParam))
+            {
+                return Enumerable.Empty<PostSearchDto>();
+            }
+
+            return await _context.Posts
+                .Include(p => p.User) // Still include for the query filtering
+                .Where(p => 
+                    p.Title.Contains(searchParam) || 
+                    p.ContentURL.Contains(searchParam) ||
+                    p.User.UserName.Contains(searchParam)
+                )
+                .OrderByDescending(p => p.CreatedAt)
+                .Select(p => new PostSearchDto 
+                {
+                    Title = p.Title,
+                    Content = p.ContentURL,
+                    Image = p.ImageURL,
+                    AuthorUserName = p.User.UserName, // Only send the string, not the full User object
+                    CreatedAt = p.CreatedAt
+                })
+                .ToListAsync();
+        }
         public async Task<Post> CreateAsync(Post post, IEnumerable<int> tagIds)
         {
             // Attach selected tags
