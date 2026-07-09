@@ -18,7 +18,7 @@ builder.Services.AddScoped<IPostService, PostService>();
 builder.Services.AddTransient<ITokenService, TokenService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
     ConnectionMultiplexer.Connect("localhost:6379,abortConnect=false"));
-builder.Services.AddSingleton<IChatService, ChatService>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 builder.Services.AddCors(options =>
 {

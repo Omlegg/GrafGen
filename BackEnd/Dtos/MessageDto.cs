@@ -1,7 +1,9 @@
 namespace BackEnd.Dtos;
+
 public class MessageDto
 {
-    public required string User { get; set; }
-    public string Message { get; set; } = string.Empty;
-    public string Room { get; set; } = string.Empty;
+    public string SenderId { get; set; } = string.Empty;
+    public string ReceiverId { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public DateTime SentAt { get; set; } = DateTime.UtcNow;
 }

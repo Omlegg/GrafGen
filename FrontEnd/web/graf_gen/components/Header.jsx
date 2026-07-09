@@ -79,6 +79,11 @@ export default function Header() {
     </div>
       <div className="flex flex-row space-x-12">
         {(user)? (
+        <Link href="/messages">
+          <Image src="/message-63.png" width={30} height={30} alt="Messages" className="grayscale py-2 mix-blend-overlay " />
+        </Link>)
+        :null }
+        {(user)? (
         <Link href="/post">
           <Image src={pathname != "/post"? "plus-square-svgrepo-com.svg" : "plus-square-svgrepo-com(1).svg"} 
           width={30} height={30} alt="Create Button" className="grayscale mix-blend-overlay py-2 " />

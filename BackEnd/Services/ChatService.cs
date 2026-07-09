@@ -1,33 +1,91 @@
-using System.Text.Json;
+using BackEnd.Data;
 using BackEnd.Dtos;
+using BackEnd.Models;
 using BackEnd.Services.Base;
-using StackExchange.Redis;
+using Microsoft.EntityFrameworkCore;
 
 namespace BackEnd.Services;
 
 public class ChatService : IChatService
 {
-    private readonly IDatabase _db;
-    private const int MaxMessages = 50;
+    private readonly GrafGenDb _context;
 
-    public ChatService(IConnectionMultiplexer redis)
+    public ChatService(GrafGenDb context)
     {
-        _db = redis.GetDatabase();
-    }
-    
-    public async Task SaveMessageAsync(MessageDto message)
-    {
-        var json = JsonSerializer.Serialize(message);
-
-        await _db.ListRightPushAsync($"chat:{message.Room}", json);
+        _context = context;
     }
 
-    public async Task<List<MessageDto>> GetMessagesAsync(string room)
+    public async Task SaveMessageAsync(MessageDto dto)
     {
-        var messages = await _db.ListRangeAsync($"chat:{room}", -MaxMessages, -1);
+        var message = new Message
+        {
+            SenderId = dto.SenderId,
+            ReceiverId = dto.ReceiverId,
+            Content = dto.Content,
+            SentAt = dto.SentAt
+        };
 
-        return messages
-            .Select(x => JsonSerializer.Deserialize<MessageDto>(x!)!)
-            .ToList();
+        _context.Messages.Add(message);
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<List<MessageDto>> GetMessagesAsync(
+        string currentUserId,
+        string otherUserId)
+    {
+        return await _context.Messages
+
+            .Where(m =>
+                (m.SenderId == currentUserId &&
+                 m.ReceiverId == otherUserId)
+
+                ||
+
+                (m.SenderId == otherUserId &&
+                 m.ReceiverId == currentUserId))
+
+            .OrderBy(m => m.SentAt)
+
+            .Select(m => new MessageDto
+            {
+                SenderId = m.SenderId,
+                ReceiverId = m.ReceiverId,
+                Content = m.Content,
+                SentAt = m.SentAt
+            })
+
+            .ToListAsync();
+    }
+
+    public async Task<List<UserDto>> GetConversationsAsync(string currentUserId)
+    {
+        var userIds = await _context.Messages
+
+            .Where(m =>
+                m.SenderId == currentUserId ||
+                m.ReceiverId == currentUserId)
+
+            .Select(m =>
+                m.SenderId == currentUserId
+                    ? m.ReceiverId
+                    : m.SenderId)
+
+            .Distinct()
+
+            .ToListAsync();
+
+        return await _context.Users
+
+            .Where(u => userIds.Contains(u.Id))
+
+            .Select(u => new UserDto
+            {
+                Id = u.Id,
+                UserName = u.UserName!,
+                ProfilePictureUrl = u.ProfilePictureUrl
+            })
+
+            .ToListAsync();
     }
 }
