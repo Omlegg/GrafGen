@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using BackEnd.Dtos;
 using BackEnd.Models;
 using BackEnd.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BackEnd.Controllers
@@ -38,17 +40,37 @@ namespace BackEnd.Controllers
         }
 
         // POST: api/Post
-        [HttpPost]
-        public async Task<ActionResult<Post>> Create([FromForm] PostDto postDto)
+       [HttpPost]
+        [Authorize]
+        public async Task<ActionResult<Post>> Create([FromForm] PostDto postDto, IFormFile image)
         {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            string? fileName = null;
+            if (image != null && image.Length > 0)
+            {
+                var storagePath = Path.Combine(Directory.GetCurrentDirectory(),"wwwroot","PrivateStorage", "Posts");
+                if (!Directory.Exists(storagePath)) Directory.CreateDirectory(storagePath);
+
+                var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
+                fileName = $"{Guid.NewGuid()}{extension}";
+                var filePath = Path.Combine(storagePath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await image.CopyToAsync(stream);
+                }
+            }
+
             var createdPost = await _postService.CreateAsync(
                 new Post
                 {
                     Title = postDto.Title,
                     ContentURL = postDto.Content,
-                    UserId = postDto.UserId,
+                    UserId = userId,
                     CreatedAt = DateTime.UtcNow,
-                    ImageURL = postDto.Image != null ? postDto.Image.FileName : null
+                    ImageURL = fileName // Save the GUID filename to your database
                 },
                 postDto.TagIds
             );

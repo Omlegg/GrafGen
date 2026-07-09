@@ -18,21 +18,23 @@ export default function CreatePost() {
     setPreview(URL.createObjectURL(file));
   };
 
+
   const handleSubmit = async () => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
+      const token = localStorage.getItem("accessToken");
+      // Assuming you have the user object available, or you can get the ID from your user state
+      
+      if (!token) return;
 
-    setLoading(true);
+      setLoading(true);
 
-    try {
-      const formData = new FormData();
+      try {
+        const formData = new FormData();
+        formData.append("title", title);
+        formData.append("content", content); 
 
-      formData.append("title", title);
-      formData.append("content", content);
-
-      if (image) {
-        formData.append("image", image);
-      }
+        if (image) {
+          formData.append("image", image);
+        }
 
       const response = await fetch(
         "http://localhost:5166/api/post",
