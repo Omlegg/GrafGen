@@ -160,11 +160,9 @@ public class IdentityController : ControllerBase
         var filePath = Path.Combine(storagePath, fileName);
 
 
-        using (var stream = new FileStream(filePath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-            Console.WriteLine(filePath, stream);
-        }
+        await using var stream = new FileStream(filePath, FileMode.CreateNew);
+        await file.CopyToAsync(stream);
+        Console.WriteLine(filePath);
 
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();

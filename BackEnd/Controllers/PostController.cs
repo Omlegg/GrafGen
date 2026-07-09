@@ -30,6 +30,18 @@ namespace BackEnd.Controllers
             return Ok(posts);
         }
 
+        [HttpGet("random")]
+        public async Task<ActionResult<IEnumerable<Post>>> GetRandomPosts()
+        {
+            var posts = await _postService.GetNumberAsync();
+
+            if (posts == null || !posts.Any())
+            {
+                return NoContent();
+            }
+            return Ok(posts);
+        }
+
         // GET: api/Post/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Post>> GetById(int id)
@@ -57,10 +69,9 @@ namespace BackEnd.Controllers
                 fileName = $"{Guid.NewGuid()}{extension}";
                 var filePath = Path.Combine(storagePath, fileName);
 
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await image.CopyToAsync(stream);
-                }
+                await using var stream = new FileStream(filePath, FileMode.CreateNew);
+                await image.CopyToAsync(stream);
+                Console.WriteLine(filePath);
             }
 
             var createdPost = await _postService.CreateAsync(

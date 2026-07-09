@@ -80,7 +80,8 @@ export default function Header() {
       <div className="flex flex-row space-x-12">
         {(user)? (
         <Link href="/post">
-          <Image src="plus-square-svgrepo-com.svg" width={30} height={30} alt="Create Button" className="grayscale mix-blend-overlay " />
+          <Image src={pathname != "/post"? "plus-square-svgrepo-com.svg" : "plus-square-svgrepo-com(1).svg"} 
+          width={30} height={30} alt="Create Button" className="grayscale mix-blend-overlay " />
         </Link>)
         :null }
         {(user)? (

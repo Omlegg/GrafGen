@@ -75,7 +75,27 @@ builder.Services.AddDbContext<GrafGenDb>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
-app.UseStaticFiles();
+
+var baseDir = builder.Environment.ContentRootPath;
+var postsPath = Path.Combine(baseDir, "wwwroot", "PrivateStorage", "Posts");
+var profilesPath = Path.Combine(baseDir, "wwwroot", "PrivateStorage", "Profiles");
+
+// Ensure they exist
+if (!Directory.Exists(postsPath)) Directory.CreateDirectory(postsPath);
+if (!Directory.Exists(profilesPath)) Directory.CreateDirectory(profilesPath);
+
+// Now it is safe to use PhysicalFileProvider
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(postsPath),
+    RequestPath = "/content/posts"
+});
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(profilesPath),
+    RequestPath = "/content/profiles"
+});
 
 app.MapHub<GrafGenHub>("/chatHub");
 
