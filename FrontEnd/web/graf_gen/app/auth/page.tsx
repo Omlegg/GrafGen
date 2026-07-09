@@ -29,7 +29,7 @@ export default function AuthPage() {
     if (res.ok) {
       const data = await res.json();
       localStorage.setItem("accessToken", data.accessToken);
-      router.push("/");
+      window.location.href = "/";
     } else {
       alert("Authentication failed");
     }

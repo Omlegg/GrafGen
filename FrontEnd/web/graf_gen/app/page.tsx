@@ -9,6 +9,7 @@ interface PostDto {
   content: string;
   createdAt: string;
   contentURL:string;
+  imageURL: string;
 }
 export default function Home() {
   const [posts, setPosts] = useState<PostDto[]>([]);
@@ -17,8 +18,7 @@ export default function Home() {
 
   const isFetchingRef = useRef(false);
   const observerTarget = useRef<HTMLDivElement | null>(null);
-
-  const loadMorePosts = useCallback(async () => {
+const loadMorePosts = useCallback(async () => {
     if (isFetchingRef.current) return;
 
     isFetchingRef.current = true;
@@ -26,15 +26,17 @@ export default function Home() {
     setHasError(false);
 
     try {
-      const response = await fetch("http://localhost:5166/api/Post");
+      const response = await fetch("http://localhost:5166/api/Post/random");
 
       if (!response.ok) {
         throw new Error("Failed to fetch posts");
       }
 
-      const data = (await response.json()) as PostDto[];
-      
-      // Update state only if we got data
+      // Check if the response body is empty
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : []; // Parse only if text exists, otherwise return []
+      console.log(data);
+
       if (Array.isArray(data)) {
         setPosts((prev) => [...prev, ...data]);
       }

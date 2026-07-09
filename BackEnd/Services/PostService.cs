@@ -33,6 +33,15 @@ namespace BackEnd.Services
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
+        public async Task<IEnumerable<Post>> GetNumberAsync()
+        {
+            return await _context.Posts
+                .OrderBy(x => Guid.NewGuid()) 
+                .Take(10)
+                .ToListAsync();
+
+        }
+
         public async Task<Post> CreateAsync(Post post, IEnumerable<int> tagIds)
         {
             // Attach selected tags
