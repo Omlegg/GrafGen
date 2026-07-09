@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BackEnd.Dtos;
 using BackEnd.Models;
 
 namespace BackEnd.Services
@@ -16,6 +17,8 @@ namespace BackEnd.Services
         Task<Post?> UpdateAsync(int id, Post updatedPost, IEnumerable<int> tagIds);
         Task<bool> DeleteAsync(int id);
 
+
+        Task<IEnumerable<PostSearchDto>> GetPostsBySearch(string searchParam);
     
     }
 }
